@@ -14,37 +14,37 @@ Commands are divided into 3 categories, admins, authortized users and normal use
 Admins:
 --------
 
-`.turn <on/off>`    | turns bot on or off, bot will still be online but it will ignore all commands.
+`.turn <on/off>`    - turns bot on or off, bot will still be online but it will ignore all commands.
 
-`.ath <username>`   | adds <username> to authorized list allowing them to use .<add/remove> and .<update>. Note list of authoritized usernames isn't saved i.e. is lost on restart.
+`.ath <username>`   - adds <username> to authorized list allowing them to use .<add/remove> and .<update>. Note list of authoritized usernames isn't saved i.e. is lost on restart.
 
-`.rmath <username>` | removes <username> from authorized list
+`.rmath <username>` - removes <username> from authorized list
 
-`.join <channel>`   | bot will join #<channel> be sure to write the channel name without # otherwise the bot will join ##<channel>
+`.join <channel>`   - bot will join #<channel> be sure to write the channel name without # otherwise the bot will join ##<channel>
 
-`.quit <channel>`   | bot will part from #<channel> be sure to use <chanel> without #
+`.quit <channel>`   - bot will part from #<channel> be sure to use <chanel> without #
 
 Admins/authoritized nicknames:
 --------
 
-`.add <stream or download> <link>` | adds link to stream or download list. <link> can contain multiple words and spaces.
+`.add <stream or download> <link>` - adds link to stream or download list. <link> can contain multiple words and spaces.
 
-.remove <stream/download> <link> | Opposite of command above. Note: if you added link with multiple words this command can\'t remove only certain words. You have to enter same text as when it was added
+.remove <stream/download> <link>` - Opposite of command above. Note: if you added link with multiple words this command can\'t remove only certain words. You have to enter same text as when it was added
 
+`.add sstream <link>` - shortens link using goo.gl service and adds it to stream list, to remove it use `.remove stream <shortened url>`. When using `sstream` no additional text can be added with this command, it will return error if you try to use `.add sstream <url> some descriptive text`
 
-`.add sstream <link>` | shortens link using goo.gl service and adds it to stream list, to remove it use `.remove stream <shortened url>`. When using `sstream` no additional text can be added with this command, it will return error if you try to use `.add sstream <url> some descriptive text`
+`.ban <username>` and `.unban <username>` - disallow or allow <username> to use any of BBBot's commands
 
 To clear all stream links use `.remove stream clear_all` this will display current stream list in case you want to undo clear_all command.
 
 Users:
 --------
 
-`!i`        | Shows next episode name, air time and link to reddit discussion thread.
-            Example of displayed info:Next episode: Breaking Bad: Season 5, Ep isode 5 "Dead Freight" (12 Aug. 2012) | Airs in 3 days 12 hours 44 minutes 41 seconds | Latest reddit discussion thread S05E04 "Fifty-One" http://reddit.com
+`!i`        - Shows next episode name, air time and link to reddit discussion thread. Example of displayed info:Next episode: Breaking Bad: Season 5, Ep isode 5 "Dead Freight" (12 Aug. 2012) - Airs in 3 days 12 hours 44 minutes 41 seconds - Latest reddit discussion thread S05E04 "Fifty-One" http://reddit.com
 
-`!stream`   | Shows links/text that has been added via .add stream <link> command
+`!stream`   - Shows links/text that has been added via .add stream <link> command
 
-`!download` | Shows links/text that has been added via .add download <link> command
+`!download` - Shows links/text that has been added via .add download <link> command
 
 
 Installation
@@ -93,5 +93,5 @@ Use channels on line 208 if you want to join channels without using "database", 
 
 ---
 
-Make sure all files are in same folder and run BBBot.py. It should work.
+Make sure all files are in same folder and run BBBot.py.
 
