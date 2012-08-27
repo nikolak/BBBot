@@ -29,7 +29,7 @@ Admins/authoritized nicknames:
 
 `.add <stream or download> <link>` - adds link to stream or download list. <link> can contain multiple words and spaces.
 
-.remove <stream/download> <link>` - Opposite of command above. Note: if you added link with multiple words this command can\'t remove only certain words. You have to enter same text as when it was added
+`.remove <stream/download> <link>` - Opposite of command above. Note: if you added link with multiple words this command can\'t remove only certain words. You have to enter same text as when it was added
 
 `.add sstream <link>` - shortens link using goo.gl service and adds it to stream list, to remove it use `.remove stream <shortened url>`. When using `sstream` no additional text can be added with this command, it will return error if you try to use `.add sstream <url> some descriptive text`
 
