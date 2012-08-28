@@ -27,7 +27,7 @@ import googl
 
 db = shelve.open('database.db')
 api_key = db['api_key']
-if api_key != '':
+if api_key!='':
     client=googl.Googl(api_key)
 admin=db['admin']
 password=db['password']
@@ -36,14 +36,25 @@ admin=db['admin']
 auth=db['auth']
 initialch=db['initialch']
 cc=db['cc']
-airtimes=['06.08:02:00:00','13.08:02:00:00','20.08:02:00:00','27.08:02:00:00','03.09:02:00:00']#GMT dd.mm
-
+episodes={'06.08.12:02:00:00':'Breaking Bad: Season 5, Episode 4 "Fifty-One" (5 Aug. 2012)',
+          '13.08.12:02:00:00':'Breaking Bad: Season 5, Episode 5 "Dead Freight" (12 Aug. 2012)',
+          '20.08.12:02:00:00':'Breaking Bad: Season 5, Episode 6 "Buyout" (19 Aug. 2012)',
+          '27.08.12:02:00:00':'Breaking Bad: Season 5, Episode 7 "Say My Name" (26 Aug. 2012)',
+          '03.09.12:02:00:00':'Breaking Bad: Season 5, Episode 8 "Gliding Over All" (2 Sep. 2012)',
+          '15.07.13:02:00:00':'Breaking Bad: Season 5, Episode 9 N/A - approximate date (Jul. 15, 2013)',
+          }
 def getairtime():
-    t1 = strftime('%d.%m:%H:%M:%S', gmtime())#current date/time GMT
-    ctime=datetime.strptime(t1,'%d.%m:%H:%M:%S')
+    tmpairtimes=[]
+    for item in episodes:
+        tmpairtimes.append(item)
+    airtimes = [datetime.strptime(ts, "%d.%m.%y:%H:%M:%S") for ts in tmpairtimes]
+    airtimes.sort()
+    airtimes = [datetime.strftime(ts, "%d.%m.%y:%H:%M:%S") for ts in airtimes]
+    t1 = strftime('%d.%m.%y:%H:%M:%S', gmtime())#current date/time GMT
+    ctime=datetime.strptime(t1,'%d.%m.%y:%H:%M:%S')
     for t in airtimes:
         try:
-            airtime=datetime.strptime(t,'%d.%m:%H:%M:%S')
+            airtime=datetime.strptime(t,'%d.%m.%y:%H:%M:%S')
             if ctime<=airtime:
                 return t
         except ValueError:
@@ -55,12 +66,6 @@ def getepisode():
     airtime=getairtime()
     if airtime=='error':
         return 'N/A'
-    episodes={'06.08:02:00:00':'Breaking Bad: Season 5, Episode 4 "Fifty-One" (5 Aug. 2012)',
-              '13.08:02:00:00':'Breaking Bad: Season 5, Episode 5 "Dead Freight" (12 Aug. 2012)',
-              '20.08:02:00:00':'Breaking Bad: Season 5, Episode 6 "Buyout" (19 Aug. 2012)',
-              '27.08:02:00:00':'Breaking Bad: Season 5, Episode 7 "Say My Name" (26 Aug. 2012)',
-              '03.09:02:00:00':'Breaking Bad: Season 5, Episode 8 "Gliding Over All" (2 Sep. 2012)'
-              }
     try:
         return episodes[airtime]
     except KeyError:
@@ -70,14 +75,33 @@ def timediff():
     airtime=getairtime()
     if airtime=='error':
         return 'N/A'
-    ctime = strftime('%d.%m:%H:%M:%S', gmtime())
-    t1=datetime.strptime(ctime,'%d.%m:%H:%M:%S')
-    t2=datetime.strptime(airtime,'%d.%m:%H:%M:%S')
+    ctime = strftime('%d.%m.%y:%H:%M:%S', gmtime())
+    t1=datetime.strptime(ctime,'%d.%m.%y:%H:%M:%S')
+    t2=datetime.strptime(airtime,'%d.%m.%y:%H:%M:%S')
     sec = t2-t1
-    d = datetime(1,1,1) +sec
+    time=str(sec)
+    ret=''
+    ssplit=1
+    day=time.split(',')[0].strip()
+    if day.split(' ')[0].isdigit():
+        ret+=day
+    
+    try:
+        time.split(',')[1].strip()
+    except IndexError:
+        ssplit=0
+    hours=time.split(',')[ssplit].strip()
+    if hours.split(':')[0]!='00':
+        ret+=' '+hours.split(':')[0]+' hours'
+    
+    minutes=time.split(',')[ssplit].strip()
+    if minutes.split(':')[1]!='00':
+        ret+=' '+minutes.split(':')[1]+' minutes'
 
-    return ("%d days %d hours %d minutes %d seconds" % (d.day-1, d.hour, d.minute, d.second))
-
+    seconds=time.split(',')[ssplit].strip()
+    if seconds.split(':')[2]!='00':
+        ret+=' '+seconds.split(':')[2]+' seconds'
+    return ret
 
 def shorten(value):
     try:
