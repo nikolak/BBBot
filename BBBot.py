@@ -160,18 +160,18 @@ class BBBot(SingleServerIRCBot):
         elif cmd.startswith('.ban'):
             user = cmd.replace('.ban', '').strip()
             if nick.lower() in self.authorized:
-                if user in self.banned_users:
+                if user.lower() in self.banned_users:
                     c.privmsg(t, user + ' is already banned')
                 else:
-                    self.banned_users.append(user)
+                    self.banned_users.append(user.lower())
                     c.privmsg(t, user + ' is banned from using BBBot.')
     
 
         elif cmd.startswith('.unban'):
             user = cmd.replace('.unban', '').strip()
             if nick.lower() in self.authorized:
-                if user in self.banned_users:
-                    self.banned_users.remove(user)
+                if user.lower() in self.banned_users:
+                    self.banned_users.remove(user.lower())
                     c.privmsg(t, user + ' is now allowed to use BBBot.')
                 else:
                     c.privmsg(t, user + ' is not banned.')
