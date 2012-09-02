@@ -6,8 +6,6 @@ Ivan Grishaev <ivan@grishaev.me>
 
 See http://code.google.com/intl/en/apis/urlshortener/overview.html
 
-TODO:
-    OAuth support;
 
 Usage:
 
