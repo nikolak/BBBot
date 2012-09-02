@@ -23,40 +23,65 @@
 from ircbot import SingleServerIRCBot
 from irclib import nm_to_n, ip_numstr_to_quad, is_channel
 import bblib as brba
-from time import sleep
+from time import sleep, time
+import imdbdb
 
 class BBBot(SingleServerIRCBot):
     stop = False
 
     def __init__(self, nickname, server, port=6667):
         SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
-        self.initial_channels = brba.initialch
-        self.user_req_times = dict()
-        self.banned_users  = brba.banned
-        self.admin    = brba.admin
-        self.authorized= brba.auth
-        self.ircpass   = brba.password
+        try:
+            self.initial_channels = brba.initialch
+            self.banned_users  = brba.banned
+            self.admin    = brba.admin
+            self.authorized= brba.auth
+            self.ircpass   = brba.password
+            self.cc='#'+brba.cc
+        except AttributeError:
+            print 'Problems with the database, one or more items missing.'
+            self.stop = True
+            self.die()
         self.enabled = True
-        self.cc='#'+brba.cc
+        self.timelimit=10 #each command, for normal users, can only be executed once every n seconds
+        self.maxlen=450 # maximum number of characters allowed per line, used mostly by !imdb command
+        self.cmdtimes={'!stream':0, '!download':0, '!i':0, 'notify':20}
+        self.notifytime=10#notify user why the command isn't working but only if last notification was less than n seconds ago
     def on_nicknameinuse(self, c, e):
+#        if we want to ghost originally intented nickname, not really tested, should work in theory
+#        c.privmsg('NickServ', 'GHOST %s %s' % (self.nickname, self.ircpass))
+#        sleep(2)
+#        c.nick(self.nickname)
         c.nick(c.get_nickname() + "_")
 
     def on_welcome(self, c, e):
         c.privmsg('NickServ', 'IDENTIFY '+self.ircpass.strip())#strip needed?
         sleep(2) 
         for ch in self.initial_channels:
-            c.join('#' + ch)
-#        if we want to ghost originally intented nickname
-#        if self.nickpass and c.get_nickname() != self.nickname:
-#            c.privmsg('NickServ', 'GHOST %s %s' % (nickname, self.ircpass))
-
+            if ch.startswith('#'):
+                c.join(ch)
+            else:
+                c.join('#' + ch)
 
     def on_privmsg(self, c, e):
         self.do_command(e, e.arguments()[0])
 
     def on_pubmsg(self, c, e):
+        nick = nm_to_n(e.source())
+        t = e.target()
+        command=e.arguments()[0]
+        if not is_channel(t):
+            t = nick
+        if not nick.lower() in self.authorized:
+            if command in ['!stream','!i','!download']:
+                if time()-self.cmdtimes[command]<self.timelimit:
+                    if time()-self.cmdtimes['notify']>self.notifytime:
+                        c.privmsg(t, nick+': Only one command of that kind is alllowed every %s seconds' %(self.timelimit))
+                        self.cmdtimes['notify']=time()
+                    return
+                self.cmdtimes[command]=time()
         self.do_command(e, e.arguments()[0])
-        return
+        return#?
 
     def on_dccmsg(self, c, e):
         c.privmsg("You said: " + e.arguments()[0])
@@ -81,13 +106,13 @@ class BBBot(SingleServerIRCBot):
         if not is_channel(t):
             t = nick
 
+
         if nick.lower() in self.banned_users:
             return
 
         elif not self.enabled and not cmd.startswith('.turn'):
             return
-        
-            
+
         elif cmd=='botinfo':
             if nick.lower() in self.admin:
                 c.privmsg(t,'Initial channels:')
@@ -101,7 +126,25 @@ class BBBot(SingleServerIRCBot):
                 sleep(2)
                 c.privmsg(t, 'Bot authorized users')
                 c.privmsg(t, self.authorized)
-
+                
+        elif cmd.startswith('.timelimit'):
+            newlimit = cmd.replace('.timelimit', '').strip()
+            if nick.lower() in self.authorized:
+                try:
+                    self.timelimit=float(newlimit)
+                except ValueError:
+                    c.privmsg(t, 'Value must be number')
+                c.privmsg(t, nick+': Timelimit for every user command set to %s seconds!' %newlimit)
+                
+        elif cmd.startswith('.notifytime'):
+            newlimit = cmd.replace('.notifytime', '').strip()
+            if nick.lower() in self.authorized:
+                try:
+                    self.notifytime=float(newlimit)
+                except ValueError:
+                    c.privmsg(t, 'Value must be number')
+                c.privmsg(t, nick+': self.notifytime set to %s seconds!' %newlimit)
+             
         elif cmd.startswith('.turn'):
             option = cmd.replace('.turn', '').strip()
             if nick.lower() in self.admin:
@@ -153,13 +196,32 @@ class BBBot(SingleServerIRCBot):
         elif cmd.startswith('.join'):
             ch = cmd.replace('.join', '').strip()
             if nick.lower() in self.admin:
-                c.join('#' + ch)
+                if ch.startswith('#'):
+                    c.join(ch)
+                else:
+                    c.join('#' + ch)
                 
         elif cmd.startswith('.quit'):
             ch = cmd.replace('.quit', '').strip()
             if nick.lower() in self.admin:
-                c.part('#' + ch + ' quitting')
+                if ch.startswith('#'):
+                    c.part(ch + ' BBBot out!')
+                else:
+                    c.part('#' + ch + ' BBBot out!')
                 
+        elif cmd.startswith('.say'):
+            if nick.lower() in self.authorized:
+                channel=cmd.replace('.say','').strip().split()[0]
+                text=cmd.replace('.say','').replace(channel,'').strip()
+                if len(cmd.split())<3:
+                    c.privmsg(t, 'Missing something? Proper usage .say channel text, you seem to only have 2 parameters.')
+                    return
+                if not channel.startswith('#'):
+                    channel='#'+channel
+#                if not channel in self.channels.items():
+#                    c.privmsg(t, 'Bot doesn\'t seem to be in '+channel+' can\'t send message there.')
+#                    return
+                c.privmsg(channel, text) 
     
         elif cmd.startswith('.add'):
             if nick.lower() in self.authorized:
@@ -194,26 +256,53 @@ class BBBot(SingleServerIRCBot):
                     c.privmsg(t, 'index error')
                 c.privmsg(t,brba.updatethread(url))
                 
-        elif cmd.startswith('!i'):
+        elif cmd=='!i':
             if not is_channel(t): 
                 return
             c.privmsg(t, brba.info())
 
-        elif cmd.startswith('!download'):
+        elif cmd=='!download':
             if not is_channel(t): 
                 return
             c.privmsg(t, brba.download())
             
-        elif cmd.startswith('!stream'):
+        elif cmd=='!stream':
             if not is_channel(t): 
                 return
             c.privmsg(t, brba.stream())
+            
+        elif cmd.startswith('!imdb'):
+            return#whole thing basically disabled.
+            if not nick.lower() in self.authorized:
+                return
+            if not is_channel(t): 
+                return
+            values=cmd.replace('!imdb','')
+            values=values.split('.')
+            try:
+                season=int(values[0])
+                episode=int(values[1])
+            except ValueError:
+                c.privmsg(t, 'Error, use it like this <!imdb 1.2> for example')
+                return
+            result=imdbdb.get_from_db(season, episode)
+            strings=[]
+            while len(result)>self.maxlen:
+                strings.append(result[:self.maxlen])
+                result=result[self.maxlen:]
+            strings.append(result)
+            for string in strings:
+                sleep(1)
+                c.privmsg(t, string)
             
         elif cmd.startswith('!suggest'):
             if not is_channel(t): 
                 return
             suggestion=cmd.replace('!suggest','')
-            c.privmsg(self.cc, '[link suggestion] : '+nick+' : '+suggestion)
+            if suggestion.strip()!='':
+                c.privmsg(self.cc, '[suggestion] : '+nick+' : '+suggestion)
+
+
             
         elif cmd == '.help':
                 if nick.lower() in self.admin:
@@ -247,7 +336,7 @@ class BBBot(SingleServerIRCBot):
 
 
 def main():
-    server = 'irc.your_server.com'
+    server = '127.0.0.1'
     port = 6667
     nickname = 'BBBot'
     
