@@ -1,15 +1,17 @@
 BBBot
 ========
 
-BBBot is a simple IRC bot written in python using [irclib](http://python-irclib.sourceforge.net/ "irclib -- Internet Relay Chat (IRC) protocol client library").
-It's a simple bot that enables selected users to add links/text to be displayed when users use commands. Primarily wiritten to share stream/download links and/or episode info for TV Shows.
+BBBot is a simple IRC bot written in python using [irclib](http://python-irclib.sourceforge.net/ "irclib -- Internet Relay Chat (IRC) protocol client library") and [IMDbPY](http://imdbpy.sourceforge.net/ "IMDbPY is a Python package useful to retrieve and manage the data of the IMDb movie database about movies, people, characters and companies.").
+It's a simple bot that enables selected users to add links/text to be displayed when other users use assigned commands. Primarily wiritten to share stream/download links and/or episode info for TV Shows.
 It also displays information when the next episode airs and its name.
 The data is saved using shelve. Should work on every 2.6+ python. Tested and developed on python 2.7.3.
+For IMDb sqlite3 is used, when finished the bot will automatically retrieve episode info and add it to sql database, only stream download links will be added manually.
+
 
 Commands
 ========
 
-Commands are divided into 3 calink tegories, admins, authortized users and normal users.
+Commands are divided into 3 categories, admins, authortized users and normal users.
 
 All commands except the ones for normal users can be used via private chat i.e. they don't have to be said to bot publicly on a channel.
 
@@ -22,9 +24,9 @@ Admins:
 
 `.rmath <username>` - removes <username> from authorized list
 
-`.join <channel>`   - bot will join <channel>
+`.join <channel>`   - bot will join `<channel>`
 
-`.quit <channel>`   - bot will part from <channel>
+`.quit <channel>`   - bot will part from `<channel>`
 
 
 Admins/authoritized nicknames:
@@ -39,6 +41,10 @@ Admins/authoritized nicknames:
 `.ban <username>` and `.unban <username>` - disallow or allow <username> to use any of BBBot's commands
 
 `.say <channel> <text>` - if bot is present on <channel> it will say <text> on that channel, channel can be entered as `#<channel>` or `<channel>`
+
+`.timelimit <number>` - timelimit is number of seconds that need to pass before command can be used again by normal users i.e. not in admin or auth list
+
+`.notifytime <number>` - notifytime is number of seconds since last notification that command can't be used more than x number of seconds, to disable type something like 99999999
 
 To clear all stream links use `.remove stream clear_all` this will display current stream list in case you want to undo clear_all command.
 
@@ -100,3 +106,16 @@ Modify server name on line 204, port on 205(default is 6667) and nickname on 206
 ---
 
 Make sure all files are in same folder and run BBBot.py.
+
+---
+
+Other
+========
+
+IMDb is semi functional, to use it uncomment `create_db()` and `update_db()` lines in `imdbdb.py` file.
+
+To make the function accessable by anyone remove lines 275,276 and 277 in BBBot.py file.
+
+Usage `!imdb <season_number>.<episode_number>` for example `!imdb 1.8`
+
+SQL file can't be updated any other way than running imdbdb.py directly. The whole thing isn't really tested properly and probably has a lot of bugs and will make bot crash.
