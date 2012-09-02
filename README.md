@@ -2,28 +2,29 @@ BBBot
 ========
 
 BBBot is a simple IRC bot written in python using [irclib](http://python-irclib.sourceforge.net/ "irclib -- Internet Relay Chat (IRC) protocol client library").
-It's a simple bot that enables selected users to add links/text to be displayed when users use commands.
+It's a simple bot that enables selected users to add links/text to be displayed when users use commands. Primarily wiritten to share stream/download links and/or episode info for TV Shows.
 It also displays information when the next episode airs and its name.
-The data is saved using shelve. Requires python 2.6+
+The data is saved using shelve. Should work on every 2.6+ python. Tested and developed on python 2.7.3.
 
 Commands
 ========
 
-Commands are divided into 3 categories, admins, authortized users and normal users.
+Commands are divided into 3 calink tegories, admins, authortized users and normal users.
 
+All commands except the ones for normal users can be used via private chat i.e. they don't have to be said to bot publicly on a channel.
 
 Admins:
 --------
 
 `.turn <on/off>`    - turns bot on or off, bot will still be online but it will ignore all commands.
 
-`.ath <username>`   - adds <username> to authorized list allowing them to use .<add/remove> and .<update>. Note list of authoritized usernames isn't saved i.e. is lost on restart.
+`.ath <username>`   - adds <username> to authorized list allowing them to use commands listed below under "Admins/authoritized nicknames" section. Note: list of authoritized usernames isn't saved i.e. is lost on restart.
 
 `.rmath <username>` - removes <username> from authorized list
 
-`.join <channel>`   - bot will join #<channel> be sure to write the channel name without # otherwise the bot will join ##<channel>
+`.join <channel>`   - bot will join <channel>
 
-`.quit <channel>`   - bot will part from #<channel> be sure to use <chanel> without #
+`.quit <channel>`   - bot will part from <channel>
 
 
 Admins/authoritized nicknames:
@@ -37,6 +38,8 @@ Admins/authoritized nicknames:
 
 `.ban <username>` and `.unban <username>` - disallow or allow <username> to use any of BBBot's commands
 
+`.say <channel> <text>` - if bot is present on <channel> it will say <text> on that channel, channel can be entered as `#<channel>` or `<channel>`
+
 To clear all stream links use `.remove stream clear_all` this will display current stream list in case you want to undo clear_all command.
 
 
@@ -49,6 +52,7 @@ Users:
 
 `!download` - Shows links/text that has been added via .add download <link> command
 
+`!suggest <url> and/or <text>` - suggest link to be added to stream/download list or sends message to BBBot's main channel.
 
 Installation
 ========
@@ -69,7 +73,7 @@ In create_db.py change the following:
 
 `auth` - list of people who are on authoritized list, users who are added in admin list should be manually added here too otherwise they won't be able to use commands assigned to users on authoritized list untill they're added to it.
 
-`initialch` - list of channels that bot will attempt to join after it connects to server. Add channels without #, otherwise the bot will join ##<channel>
+`initialch` - list of channels that bot will attempt to join after it connects to server. 
 
 `streamlinks` - list of stream links, you could leave this empty and add them from IRC.
 
