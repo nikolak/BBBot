@@ -36,7 +36,7 @@ def create_db():
                  summary text, imdburl text)''')
     return 'Database created'
 
-def get_from_db(season, episode):
+def get_from_db(season, episode, lenght):
     if season != '' and episode != '':#get by season,episode
         try:
             c.execute('select * from episodes where season=?', str(season))
@@ -60,7 +60,9 @@ def get_from_db(season, episode):
                 title = str(row[2])
                 plot = str(row[3]).replace('::garykmcd"]', '').replace('[u"', '').split('u"')[0]
                 url = 'http://www.imdb.com/title/tt' + str(row[4])
-                return 'S' + season + 'E' + episode + ':' + title + ' : ' + url + ' | Plot: ' + plot
+                res = 'S' + season + 'E' + episode + ':' + title + ' | Plot: ' + plot
+                res = res[:lenght - 49].strip() + '...Read more: ' + url
+                return res
 
 def add_to_db(season, episode, ep_name, ep_plot, imdb_url):
     t = (str(season), str(episode), str(ep_name), str(ep_plot), str(imdb_url))
@@ -87,7 +89,9 @@ def update_db():
             add_to_db(str(season), str(ep), str(ep_name), str(ep_plot), str(imdb_url))
             print 'S' + str(season) + 'E' + str(ep) + ' Added to database'
     c.close()
+    
 if __name__ == '__main__':
+    print get_from_db(2, 2, 100)
 #    create_db()
 #    update_db()
     pass
