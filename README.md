@@ -5,7 +5,7 @@ BBBot is a simple IRC bot written in python using [irclib](http://python-irclib.
 It's a simple bot that enables selected users to add links/text to be displayed when other users use assigned commands. Primarily wiritten to share stream/download links and/or episode info for TV Shows.
 It also displays information when the next episode airs and its name.
 The data is saved using shelve. Should work on every 2.6+ python. Tested and developed on python 2.7.3.
-For IMDb sqlite3 is used, when finished the bot will automatically retrieve episode info and add it to sql database, only stream download links will be added manually.
+For IMDb sqlite3 is used, when finished the bot will automatically retrieve episode info and add it to sql database, only stream and download links will be added manually.
 
 
 Commands
@@ -15,10 +15,12 @@ Commands are divided into 3 categories, admins, authortized users and normal use
 
 All commands except the ones for normal users can be used via private chat i.e. they don't have to be said to bot publicly on a channel.
 
+All commands: '.time','.ban','.unban','.ath','.rmath','.join','.quit','.say','.add','.remove','.update','!i','!download','!stream','!imdb','!suggest','.help','bot'
+
 Admins:
 --------
 
-`.turn <on/off>`    - turns bot on or off, bot will still be online but it will ignore all commands.
+`.turn <command> <on/off>`    - enables or disables any command from the list above, typing `.turn bot off` disables every command except `.turn` bot will still be online but it will ignore all commands.
 
 `.ath <username>`   - adds <username> to authorized list allowing them to use commands listed below under "Admins/authoritized nicknames" section. Note: list of authoritized usernames isn't saved i.e. is lost on restart.
 
@@ -42,9 +44,7 @@ Admins/authoritized nicknames:
 
 `.say <channel> <text>` - if bot is present on <channel> it will say <text> on that channel, channel can be entered as `#<channel>` or `<channel>`
 
-`.timelimit <number>` - timelimit is number of seconds that need to pass before command can be used again by normal users i.e. not in admin or auth list
-
-`.notifytime <number>` - notifytime is number of seconds since last notification that command can't be used more than x number of seconds, to disable type something like 99999999
+`.time <limit/notify> <seconds>` - sets limit and notify values in seconds. limit is number of seconds that need to pass before command can be used again by normal users i.e. not in admin or auth list. notify is the minimu time that needs to pass before bot will warn someone that he can't use command due to `limit` limit.
 
 To clear all stream links use `.remove stream clear_all` this will display current stream list in case you want to undo clear_all command.
 
@@ -56,9 +56,12 @@ Users:
 
 `!stream`   - Shows links/text that has been added via .add stream <link> command
 
-`!download` - Shows links/text that has been added via .add download <link> command
+`!download` - Shows links/text that has been added via .add download <link> command, disabled by default.
 
 `!suggest <url> and/or <text>` - suggest link to be added to stream/download list or sends message to BBBot's main channel.
+
+`!imdb <season>.<episode>` - experimental, displays name, plot, and imdb link of `<season>.<episode>`. See bottom of this file on how to set it up. Disabled by default
+
 
 Installation
 ========
