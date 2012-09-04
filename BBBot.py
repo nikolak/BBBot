@@ -19,12 +19,14 @@
 #       along with this program; if not, write to the Free Software
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
+#       
 
 from ircbot import SingleServerIRCBot
 from irclib import nm_to_n, ip_numstr_to_quad, is_channel
 from time import sleep, time
 import bblib as brba
 import imdbdb
+import sys
 
 class BBBot(SingleServerIRCBot):
     stop = False
@@ -42,15 +44,14 @@ class BBBot(SingleServerIRCBot):
             print 'Problems with the database, one or more items missing.'
             self.stop = True
             self.die()
-        self.enabled = True
-        self.timelimit = 10 #each command, for normal users, can only be executed once every n seconds
-        self.maxlen = 450 # maximum number of characters allowed per line, used mostly by !imdb command
-        self.cmdtimes = {'!stream':0, '!download':0, '!i':0, 'notify':20}
-        self.notifytime = 10#notify user why the command isn't working but only if last notification was less than n seconds ago
+        self.maxlen = 440
+        self.cmdlimits = {'!stream':0, '!download':0, '!i':0, 'notify':20, 'timelimit':10, 'notifytime':10}
+        self.allcmds = ['bot', '.time', '.ban', '.unban', '.ath', '.rmath', '.join', '.quit', '.say', '.add', '.remove', '.update', '!i', '!download', '!stream', '!imdb', '!suggest', '.help']
+        self.disabledcmds = ['!imdb', '!download']
     def on_nicknameinuse(self, c, e):
 #        if we want to ghost originally intented nickname, not really tested, should work in theory
 #        c.privmsg('NickServ', 'GHOST %s %s' % (self.nickname, self.ircpass))
-#        sleep(2)
+#        sleep(2)#enough?
 #        c.nick(self.nickname)
         c.nick(c.get_nickname() + "_")
 
@@ -72,16 +73,25 @@ class BBBot(SingleServerIRCBot):
         command = e.arguments()[0]
         if command == '!streams':
             command = '!stream'
+        if command.split()[0] in self.disabledcmds:
+            return
+        if 'bot' in self.disabledcmds and not command.startswith('.turn'):
+            return
         if not is_channel(t):
             t = nick
         if not nick.lower() in self.authorized:
             if command in ['!stream', '!i', '!download']:
-                if time() - self.cmdtimes[command] < self.timelimit:
-                    if time() - self.cmdtimes['notify'] > self.notifytime:
-                        c.privmsg(t, nick + ': Only one command of that kind is alllowed every %s seconds' % (self.timelimit))
-                        self.cmdtimes['notify'] = time()
+                if time() - self.cmdlimits[command] < self.cmdlimits['timelimit']:
+                    if time() - self.cmdlimits['notify'] > self.cmdlimits['notifytime']:
+                        try:#info and notification split to 2 lines to make it easier to read
+                            info = str(self.cmdlimits['timelimit']), str(self.cmdlimits['timelimit'] - (time() - self.cmdlimits[command])).split('.')[0]
+                            notification = ': Only one command of that kind is alllowed every %s seconds, try again in %s seconds' % info
+                        except:
+                            notification = 'Error:'
+                        c.privmsg(t, nick + notification)
+                        self.cmdlimits['notify'] = time()
                     return
-                self.cmdtimes[command] = time()
+                self.cmdlimits[command] = time()
         self.do_command(e, e.arguments()[0])
         return#?
 
@@ -105,76 +115,100 @@ class BBBot(SingleServerIRCBot):
         nick = nm_to_n(e.source())
         c = self.connection
         t = e.target()
+        #cmd=cmd.strip()
         if not is_channel(t):
             t = nick
 
-
+        if cmd.split()[0].strip().lower() in self.disabledcmds:
+            return
         if nick.lower() in self.banned_users:
             return
 
-        elif not self.enabled and not cmd.startswith('.turn'):
+        elif 'bot' in self.disabledcmds and not cmd.startswith('.turn'):
             return
 
         elif cmd == 'botinfo':
             if nick.lower() in self.admin:
-                c.privmsg(t, 'Initial channels:')
-                c.privmsg(t, self.initial_channels)
+                c.privmsg(nick, 'Disabled commands:')
+                c.privmsg(nick, self.disabledcmds)
+                c.privmsg(nick, 'Initial channels:')
+                c.privmsg(nick, self.initial_channels)
                 sleep(2)
-                c.privmsg(t, 'Banned users:')
-                c.privmsg(t, self.banned_users)
+                c.privmsg(nick, 'Banned users:')
+                c.privmsg(nick, self.banned_users)
                 sleep(2)
-                c.privmsg(t, 'Bot admins:')
-                c.privmsg(t, self.admin)
+                c.privmsg(nick, 'Bot admins:')
+                c.privmsg(nick, self.admin)
                 sleep(2)
                 c.privmsg(t, 'Bot authorized users')
                 c.privmsg(t, self.authorized)
                 
-        elif cmd.startswith('.timelimit'):
-            newlimit = cmd.replace('.timelimit', '').strip()
-            if nick.lower() in self.authorized:
-                try:
-                    self.timelimit = float(newlimit)
-                except ValueError:
-                    c.privmsg(t, 'Value must be number')
-                c.privmsg(t, nick + ': Timelimit for every user command set to %s seconds!' % newlimit)
                 
-        elif cmd.startswith('.notifytime'):
-            newlimit = cmd.replace('.notifytime', '').strip()
+                
+        elif cmd.startswith('.time'):
+            subcmd = cmd.replace('.time', '').strip()
             if nick.lower() in self.authorized:
-                try:
-                    self.notifytime = float(newlimit)
-                except ValueError:
-                    c.privmsg(t, 'Value must be number')
-                c.privmsg(t, nick + ': self.notifytime set to %s seconds!' % newlimit)
-             
+                if subcmd.split()[0].strip() == 'limit':
+                    newlimit = subcmd.replace('limit', '').strip()
+                    
+                    try:
+                        self.cmdlimits['timelimit'] = float(newlimit)
+                    except ValueError:
+                        c.privmsg(t, 'Value must be number')
+                        return
+                    c.privmsg(t, nick + ': Limit for every user command set to %s seconds!' % newlimit)
+                    return
+                if subcmd.split()[0].strip() == 'notify':
+                    newlimit = subcmd.replace('notify', '').strip()
+                    try:
+                        self.cmdlimits['notifytime'] = float(newlimit)
+                    except ValueError:
+                        c.privmsg(t, 'Value must be number')
+                        return
+                    c.privmsg(t, nick + ': Minimum time between notifications set to %s seconds!' % newlimit)
+                    return
+                else:
+                    c.privmsg(t, nick + ': Invalid parameters, .time <limit/notify> <number>')
+        
         elif cmd.startswith('.turn'):
-            option = cmd.replace('.turn', '').strip()
             if nick.lower() in self.admin:
-                if option.lower() == 'off':
-                    self.enabled = False
-                    c.privmsg(t, 'Bot is now disabled.')
-                if option.lower() == 'on':
-                    self.enabled = True
-                    c.privmsg(t, 'Bot is now enabled.')
+                what = cmd.split()[1].strip()
+                value = cmd.split()[2].strip()
+                if what not in self.allcmds:
+                    c.privmsg(t, 'Unknown command %s' % what)
+                    return
+                if not value.lower() in ['on', 'off']:
+                    c.privmsg(t, 'Unknown value %s | only "on" and "off are supported' % value)
+                    return
+                if value.lower() == 'off':
+                    if what.lower() in self.disabledcmds:
+                        c.privmsg(t, '%s is already disabled')
+                        return
+                    self.disabledcmds.append(what.lower())
+                    c.privmsg(t, '%s is now disabled.' % what)
+                if value.lower() == 'on':
+                    if not what.lower() in self.disabledcmds:
+                        c.privmsg(t, '%s isn\'t disabled')
+                        return
+                    self.disabledcmds.remove(what.lower())
+                    c.privmsg(t, '%s is now enabled.' % what)
 
-        elif cmd.startswith('.ban'):
-            user = cmd.replace('.ban', '').strip()
+        elif cmd.startswith('.ban') or cmd.startswith('.unban'):
             if nick.lower() in self.authorized:
-                if user.lower() in self.banned_users:
-                    c.privmsg(t, user + ' is already banned')
-                else:
-                    self.banned_users.append(user.lower())
-                    c.privmsg(t, user + ' is banned from using BBBot.')
-    
-
-        elif cmd.startswith('.unban'):
-            user = cmd.replace('.unban', '').strip()
-            if nick.lower() in self.authorized:
-                if user.lower() in self.banned_users:
-                    self.banned_users.remove(user.lower())
-                    c.privmsg(t, user + ' is now allowed to use BBBot.')
-                else:
-                    c.privmsg(t, user + ' is not banned.')
+                if cmd.split()[0].strip() == '.ban':
+                    user = cmd.replace('.ban', '').strip()
+                    if user.lower() in self.banned_users:
+                        c.privmsg(t, user + ' is already banned')
+                    else:
+                        self.banned_users.append(user.lower())
+                        c.privmsg(t, user + ' is banned from using BBBot.')
+                if cmd.split()[0].strip() == '.unban':
+                    user = cmd.replace('.unban', '').strip()
+                    if user.lower() in self.banned_users:
+                        self.banned_users.remove(user.lower())
+                        c.privmsg(t, user + ' is now allowed to use BBBot.')
+                    else:
+                        c.privmsg(t, user + ' is not banned.')
 
         elif cmd.startswith('.ath'):
             user = cmd.replace('.ath', '').strip()
@@ -220,10 +254,18 @@ class BBBot(SingleServerIRCBot):
                     return
                 if not channel.startswith('#'):
                     channel = '#' + channel
-#                if not channel in self.channels.items():
-#                    c.privmsg(t, 'Bot doesn\'t seem to be in '+channel+' can\'t send message there.')
-#                    return
-                c.privmsg(channel, text) 
+                inchannels = []
+                for chname in self.channels:
+                    inchannels.append(chname)
+                if channel in inchannels:
+                    c.privmsg(channel, text)
+                    return
+                if not channel in inchannels:
+                    c.privmsg(t, 'Bot doesn\'t seem to be in %s channel, so he can\'t say anything there.' % channel)
+                    return
+                else:
+                    c.privmsg(t, 'Some error')
+                
     
         elif cmd.startswith('.add'):
             if nick.lower() in self.authorized:
@@ -268,15 +310,12 @@ class BBBot(SingleServerIRCBot):
                 return
             c.privmsg(t, brba.download())
             
-        elif cmd.startswith('!stream'):
+        elif cmd == '!stream' or cmd == '!streams':
             if not is_channel(t): 
                 return
             c.privmsg(t, brba.stream())
             
         elif cmd.startswith('!imdb'):
-            return#whole thing basically disabled.
-            if not nick.lower() in self.authorized:
-                return
             if not is_channel(t): 
                 return
             values = cmd.replace('!imdb', '')
@@ -287,15 +326,8 @@ class BBBot(SingleServerIRCBot):
             except ValueError:
                 c.privmsg(t, 'Error, use it like this <!imdb 1.2> for example')
                 return
-            result = imdbdb.get_from_db(season, episode)
-            strings = []
-            while len(result) > self.maxlen:
-                strings.append(result[:self.maxlen])
-                result = result[self.maxlen:]
-            strings.append(result)
-            for string in strings:
-                sleep(1)
-                c.privmsg(t, string)
+            result = imdbdb.get_from_db(season, episode, self.maxlen)
+            c.privmsg(t, result)
             
         elif cmd.startswith('!suggest'):
             if not is_channel(t): 
@@ -347,7 +379,8 @@ def main():
         try:
             bot.start()
         except:
-            return 0
+            print sys.exc_info()[0]
+            raise
     
 if __name__ == "__main__":
     main()
