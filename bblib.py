@@ -40,6 +40,7 @@ try:
         cc = db['cc']
 except KeyError:
     print 'database error, run create_db.py to create new database.'
+    raise
     
 episodes = {'06.08.12:02:00:00':'Breaking Bad: Season 5, Episode 4 "Fifty-One" (5 Aug. 2012)',
           '13.08.12:02:00:00':'Breaking Bad: Season 5, Episode 5 "Dead Freight" (12 Aug. 2012)',
@@ -48,6 +49,7 @@ episodes = {'06.08.12:02:00:00':'Breaking Bad: Season 5, Episode 4 "Fifty-One" (
           '03.09.12:02:00:00':'Breaking Bad: Season 5, Episode 8 "Gliding Over All" (2 Sep. 2012)',
           '15.07.13:02:00:00':'Breaking Bad: Season 5, Episode 9 N/A - approximate date (Jul. 15, 2013)',
           }
+
 def getairtime():
     tmpairtimes = []
     for item in episodes:
@@ -194,15 +196,22 @@ def addremove(kind, what, value):
 
 def info():
     try:
-        reddit = db['reddit']
+        additionalinfo = ' | '+ db['additionalinfo']
+        if db['additionalinfo'].strip()=='':
+            additionalinfo=''
     except ValueError:
-        reddit = 'N/A'
-    return 'Next episode: ' + getepisode() + ' | Airs in ' + timediff() + ' | Latest reddit discussion thread ' + reddit
+        additionalinfo=''
+    return 'Next episode: ' + getepisode() + ' | Airs in ' + timediff() + additionalinfo
 
-def updatethread(url):
-    db['reddit'] = url
-    db.sync()
-    return 'New reddit lnk/thread: ' + url
+def updateainfo(ninfo):
+    if ninfo.strip()=='':
+        db['additionalinfo'] = ninfo
+        db.sync()
+        return 'Additional info removed'
+    else:
+        db['additionalinfo'] = ninfo
+        db.sync()
+        return 'New additional info: '+ninfo
     
 def download():
     try:

@@ -3,7 +3,7 @@
 #
 #
 #       
-#       Copyright (c) 2012 Nikola Kovacevic <nikolak@outlook.com>
+#       Copyright 2012 Nikola Kovacevic <nikolak@outlook.com>
 #       
 #       This program is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published by
@@ -24,21 +24,20 @@ import shelve
 
 def main():
 	db=shelve.open('database.db')
-	db['password'] ='bot_nickname_password'
-	db['banned']=['']
-	db['admin']=['user1','user2']
-	db['auth']=['user1','user2']
-	db['initialch']=['channel1','channel2']
+	db['password'] ='testpass'
+	db['banned']=['none']
+	db['admin']=['nikola']
+	db['auth']=['nikola']
+	db['initialch']=['bbbot','breakingbad']
 	db['streamlinks']=['']
 	db['downloadlinks']=['']
-	db['reddit']=''
-	db['cc']=''
-	db['api_key']=''
+	db['additionalinfo']='S05E07 "Say My Name" http://redd.it/yvnv4'
+	db['cc']='bbbot'
+	db['api_key']='google api key'
 	db.sync()
 	db.close()
 	return 0
 
 if __name__ == '__main__':
 	main()
-
 

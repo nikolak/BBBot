@@ -1,11 +1,15 @@
 BBBot
 ========
 
-BBBot is a simple IRC bot written in python using [irclib](http://python-irclib.sourceforge.net/ "irclib -- Internet Relay Chat (IRC) protocol client library") and [IMDbPY](http://imdbpy.sourceforge.net/ "IMDbPY is a Python package useful to retrieve and manage the data of the IMDb movie database about movies, people, characters and companies.").
-It's a simple bot that enables selected users to add links/text to be displayed when other users use assigned commands. Primarily wiritten to share stream/download links and/or episode info for TV Shows.
-It also displays information when the next episode airs and its name.
+BBBot is a simple IRC bot written in python using [irclib](http://python-irclib.sourceforge.net/ "irclib -- Internet Relay Chat (IRC) protocol client library").
+It's a simple bot that enables selected users to add links/text to be displayed when other users use assigned commands. Primarily wiritten to share stream/download links and/or episode info for TV Show Breaking Bad over IRC
+It also displays information when the next episode airs and its name, and it has imdb module which can display info from IMDb, currently only sqlite database with predefined data is used.
 The data is saved using shelve. Should work on every 2.6+ python. Tested and developed on python 2.7.3.
-For IMDb sqlite3 is used, when finished the bot will automatically retrieve episode info and add it to sql database, only stream and download links will be added manually.
+For IMDb sqlite3 is used, when finished the bot will automatically retrieve episode info and add it to sql database, only stream and download links will be added manually. This isn't really done yet though.
+
+This project is more or less abandonware. Last update fixed all major security issues, and many bugs. The only  thing that still needs to be done is imdb stuff.
+
+I will perhaps sometime in the future update it, but it's not very likley.
 
 
 Commands
@@ -20,7 +24,7 @@ All commands: '.time','.ban','.unban','.ath','.rmath','.join','.quit','.say','.a
 Admins:
 --------
 
-`.turn <command> <on/off>`    - enables or disables any command from the list above, typing `.turn bot off` disables every command except `.turn` bot will still be online but it will ignore all commands.
+`.turn <command> <on/off>`    - enables or disables any command from the list above, typing `.turn bot off` disables every command except `.turn`, bot will still be online but it will ignore all commands.
 
 `.ath <username>`   - adds <username> to authorized list allowing them to use commands listed below under "Admins/authoritized nicknames" section. Note: list of authoritized usernames isn't saved i.e. is lost on restart.
 
@@ -97,9 +101,7 @@ After you modified create_db.py file run it `python create_db.py` and it should 
 bblib.py
 --------
 
-On line 34 edit airtimes, enter times according to GMT timezone if you want the numbers to be correct.
-
-On line 53 add episode names and air times, make sure that the air times are same as on line 34 otherwise the episode names won't be reutrned.
+On line 44 edit airtimes and episode names, enter airtimes according to GMT timezone if you want the numbers to be correct.
 
 BBBot.py
 --------
@@ -115,9 +117,9 @@ Make sure all files are in same folder and run BBBot.py.
 Other
 ========
 
-IMDb is semi functional, to use it uncomment `create_db()` and `update_db()` lines in `imdbdb.py` file.
+IMDb is semi functional, to use it uncomment `create_db()` line in `imdbdb.py` file and run it.
 
-To make the function accessable by anyone remove lines 275,276 and 277 in BBBot.py file.
+To make the function accessable by anyone either remove it from self.disabledcmds in BBBot.py file or just run `.turn !imdb on` after bot connects to IRC.
 
 Usage `!imdb <season_number>.<episode_number>` for example `!imdb 1.8`
 

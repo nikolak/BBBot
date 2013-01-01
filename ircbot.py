@@ -1,4 +1,7 @@
-# Copyright (C) 1999--2002  Joel Rosdahl
+#! -*- coding: utf-8 -*-
+
+# Copyright (C) 1999-2002  Joel Rosdahl
+# Portions Copyring © 2011-2012 Jason R. Coombs
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -15,24 +18,20 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
 #
 # Joel Rosdahl <joel@rosdahl.net>
-#
-# $Id: ircbot.py,v 1.23 2008/09/11 07:38:30 keltus Exp $
 
-"""ircbot -- Simple IRC bot library.
+"""
+ircbot -- Simple IRC bot library.
 
 This module contains a single-server IRC bot class that can be used to
 write simpler bots.
 """
 
 import sys
-from UserDict import UserDict
 
-from irclib import SimpleIRCClient
-from irclib import nm_to_n, irc_lower, all_events
-from irclib import parse_channel_modes, is_channel
-from irclib import ServerConnectionError
+import irclib
+from irclib import nm_to_n
 
-class SingleServerIRCBot(SimpleIRCClient):
+class SingleServerIRCBot(irclib.SimpleIRCClient):
     """A single-server IRC bot class.
 
     The bot tries to reconnect if it is disconnected.
@@ -62,11 +61,11 @@ class SingleServerIRCBot(SimpleIRCClient):
             connections.
         """
 
-        SimpleIRCClient.__init__(self)
+        super(SingleServerIRCBot, self).__init__()
         self.channels = IRCDict()
         self.server_list = server_list
         if not reconnection_interval or reconnection_interval < 0:
-            reconnection_interval = 2**31
+            reconnection_interval = 2 ** 31
         self.reconnection_interval = reconnection_interval
 
         self._nickname = nickname
@@ -75,7 +74,8 @@ class SingleServerIRCBot(SimpleIRCClient):
                   "namreply", "nick", "part", "quit"]:
             self.connection.add_global_handler(i,
                                                getattr(self, "_on_" + i),
-                                               -10)
+                                               -20)
+
     def _connected_checker(self):
         """[Internal]"""
         if not self.connection.is_connected():
@@ -94,7 +94,7 @@ class SingleServerIRCBot(SimpleIRCClient):
                          self._nickname,
                          password,
                          ircname=self._realname)
-        except ServerConnectionError:
+        except irclib.ServerConnectionError:
             pass
 
     def _on_disconnect(self, c, e):
@@ -123,9 +123,9 @@ class SingleServerIRCBot(SimpleIRCClient):
 
     def _on_mode(self, c, e):
         """[Internal]"""
-        modes = parse_channel_modes(" ".join(e.arguments()))
+        modes = irclib.parse_channel_modes(" ".join(e.arguments()))
         t = e.target()
-        if is_channel(t):
+        if irclib.is_channel(t):
             ch = self.channels[t]
             for mode in modes:
                 if mode[0] == "+":
@@ -244,71 +244,10 @@ class SingleServerIRCBot(SimpleIRCClient):
     def start(self):
         """Start the bot."""
         self._connect()
-        SimpleIRCClient.start(self)
+        super(SingleServerIRCBot, self).start()
 
 
-class IRCDict:
-    """A dictionary suitable for storing IRC-related things.
-
-    Dictionary keys a and b are considered equal if and only if
-    irc_lower(a) == irc_lower(b)
-
-    Otherwise, it should behave exactly as a normal dictionary.
-    """
-
-    def __init__(self, dict=None):
-        self.data = {}
-        self.canon_keys = {}  # Canonical keys
-        if dict is not None:
-            self.update(dict)
-    def __repr__(self):
-        return repr(self.data)
-    def __cmp__(self, dict):
-        if isinstance(dict, IRCDict):
-            return cmp(self.data, dict.data)
-        else:
-            return cmp(self.data, dict)
-    def __len__(self):
-        return len(self.data)
-    def __getitem__(self, key):
-        return self.data[self.canon_keys[irc_lower(key)]]
-    def __setitem__(self, key, item):
-        if key in self:
-            del self[key]
-        self.data[key] = item
-        self.canon_keys[irc_lower(key)] = key
-    def __delitem__(self, key):
-        ck = irc_lower(key)
-        del self.data[self.canon_keys[ck]]
-        del self.canon_keys[ck]
-    def __iter__(self):
-        return iter(self.data)
-    def __contains__(self, key):
-        return self.has_key(key)
-    def clear(self):
-        self.data.clear()
-        self.canon_keys.clear()
-    def copy(self):
-        if self.__class__ is UserDict:
-            return UserDict(self.data)
-        import copy
-        return copy.copy(self)
-    def keys(self):
-        return self.data.keys()
-    def items(self):
-        return self.data.items()
-    def values(self):
-        return self.data.values()
-    def has_key(self, key):
-        return irc_lower(key) in self.canon_keys
-    def update(self, dict):
-        for k, v in dict.items():
-            self.data[k] = v
-    def get(self, key, failobj=None):
-        return self.data.get(key, failobj)
-
-
-class Channel:
+class Channel(object):
     """A class for keeping information about an IRC channel.
 
     This class can be improved a lot.
@@ -354,14 +293,15 @@ class Channel:
                 del d[nick]
 
     def change_nick(self, before, after):
-        self.userdict[after] = 1
-        del self.userdict[before]
+        self.userdict[after] = self.userdict.pop(before)
         if before in self.operdict:
-            self.operdict[after] = 1
-            del self.operdict[before]
+            self.operdict[after] = self.operdict.pop(before)
         if before in self.voiceddict:
-            self.voiceddict[after] = 1
-            del self.voiceddict[before]
+            self.voiceddict[after] = self.voiceddict.pop(before)
+
+    def set_userdetails(self, nick, details):
+        if nick in self.userdict:
+            self.userdict[nick] = details
 
     def set_mode(self, mode, value=None):
         """Set mode on the channel.
@@ -424,15 +364,88 @@ class Channel:
 
     def limit(self):
         if self.has_limit():
-            return self.modes[l]
+            return self.modes["l"]
         else:
             return None
 
     def has_key(self):
         return self.has_mode("k")
 
-    def key(self):
-        if self.has_key():
-            return self.modes["k"]
-        else:
-            return None
+# from jaraco.util.dictlib
+class KeyTransformingDict(dict):
+    """
+    A dict subclass that transforms the keys before they're used.
+    Subclasses may override the default key_transform to customize behavior.
+    """
+    @staticmethod
+    def key_transform(key):
+        return key
+
+    def __init__(self, *args, **kargs):
+        super(KeyTransformingDict, self).__init__()
+        # build a dictionary using the default constructs
+        d = dict(*args, **kargs)
+        # build this dictionary using transformed keys.
+        for item in d.items():
+            self.__setitem__(*item)
+
+    def __setitem__(self, key, val):
+        key = self.key_transform(key)
+        super(KeyTransformingDict, self).__setitem__(key, val)
+
+    def __getitem__(self, key):
+        key = self.key_transform(key)
+        return super(KeyTransformingDict, self).__getitem__(key)
+
+    def __contains__(self, key):
+        key = self.key_transform(key)
+        return super(KeyTransformingDict, self).__contains__(key)
+
+    def __delitem__(self, key):
+        key = self.key_transform(key)
+        return super(KeyTransformingDict, self).__delitem__(key)
+
+    def setdefault(self, key, *args, **kwargs):
+        key = self.key_transform(key)
+        return super(KeyTransformingDict, self).setdefault(key, *args, **kwargs)
+
+    def pop(self, key, *args, **kwargs):
+        key = self.key_transform(key)
+        return super(KeyTransformingDict, self).pop(key, *args, **kwargs)
+
+class IRCDict(KeyTransformingDict):
+    """
+    A dictionary of names whose keys are case-insensitive according to the
+    IRC RFC rules.
+
+    >>> d = IRCDict({'[This]': 'that'}, A='foo')
+
+    The dict maintains the original case:
+    >>> d.keys()
+    ['A', '[This]']
+
+    But the keys can be referenced with a different case
+    >>> d['a']
+    'foo'
+
+    >>> d['{this}']
+    'that'
+
+    >>> d['{THIS}']
+    'that'
+
+    >>> '{thiS]' in d
+    True
+
+    This should work for operations like delete and pop as well.
+    >>> d.pop('A')
+    'foo'
+    >>> del d['{This}']
+    >>> len(d)
+    0
+    """
+    @staticmethod
+    def key_transform(key):
+        if isinstance(key, basestring):
+            key = irclib.IRCFoldedCase(key)
+        return key
